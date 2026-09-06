@@ -31,7 +31,7 @@ open http://localhost:3000 and click connect. you will be sent to tippage to app
 
 ## things to know
 
-- access tokens last an hour, refresh tokens thirty days and rotate every time you use one
+- access tokens last an hour, refresh tokens never expire but rotate every time you use one
 - keep the newest refresh token, the old one dies as soon as the new one is issued
 - if you use an old refresh token the whole connection is revoked and the streamer has to connect again
 - a public app (no secret) must send `code_verifier`, this example always does
