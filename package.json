@@ -1,0 +1,13 @@
+{
+  "name": "tippage-oauth-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "smallest possible tippage oauth client - authorize, callback, token, refresh, revoke",
+  "scripts": {
+    "start": "node --env-file=.env server.js"
+  },
+  "engines": {
+    "node": ">=20.6"
+  }
+}
