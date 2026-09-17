@@ -1,4 +1,4 @@
-# tippage oauth example
+# TipPage oauth example
 
 the smallest client that can connect a streamer's tippage through oauth. no dependencies, just node.
 
