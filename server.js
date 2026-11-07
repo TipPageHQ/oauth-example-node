@@ -9,6 +9,7 @@ const {
   SCOPES = "tts:read",
   PORT = 3000,
   API = "https://api.tippage.com",
+  AUTH = "https://auth.tippage.com",
 } = process.env;
 
 if (!CLIENT_ID) {
@@ -26,7 +27,7 @@ function log(...parts) {
   console.log(new Date().toISOString().slice(11, 19), ...parts);
 }
 
-// never print a whole token, the first few chars is enough to tell them apart
+// only print first few chars
 const peek = (t) => (t ? `${t.slice(0, 12)}…` : "none");
 
 function loadTokens() {
@@ -55,7 +56,7 @@ function clientAuth(body) {
 async function tokenRequest(params) {
   const body = new URLSearchParams(params);
   log(`token request: grant_type=${params.grant_type} as ${CLIENT_SECRET ? "confidential" : "public"} client`);
-  const res = await fetch(`${API}/oauth/token`, { method: "POST", headers: clientAuth(body), body });
+  const res = await fetch(`${AUTH}/oauth/token`, { method: "POST", headers: clientAuth(body), body });
   const json = await res.json();
   if (!res.ok) {
     log(`token endpoint said ${res.status}: ${json.error} - ${json.error_description}`);
@@ -70,9 +71,11 @@ function startAuthorize() {
   const verifier = b64url(crypto.randomBytes(32));
   const challenge = b64url(crypto.createHash("sha256").update(verifier).digest());
   pending.set(state, verifier);
+  // authorize, token and revoke all live on the auth host
+  // the api host is only for /v1 calls with the token you get back
   log(`starting authorize: state=${state} scopes="${SCOPES}" challenge=${challenge.slice(0, 12)}…`);
 
-  const url = new URL(`${API}/oauth/authorize`);
+  const url = new URL(`${AUTH}/oauth/authorize`);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("client_id", CLIENT_ID);
   url.searchParams.set("redirect_uri", REDIRECT_URI);
@@ -140,7 +143,7 @@ async function revoke() {
   if (!tokens) return "nothing to revoke";
   const body = new URLSearchParams({ token: tokens.refresh_token });
   log(`revoking ${peek(tokens.refresh_token)}`);
-  const res = await fetch(`${API}/oauth/revoke`, { method: "POST", headers: clientAuth(body), body });
+  const res = await fetch(`${AUTH}/oauth/revoke`, { method: "POST", headers: clientAuth(body), body });
   log(`revoke -> ${res.status}, deleting ${TOKEN_FILE}`);
   fs.rmSync(TOKEN_FILE, { force: true });
   return "revoked and forgot the tokens";
@@ -188,6 +191,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   log(`listening on http://localhost:${PORT}`);
-  log(`client ${CLIENT_ID} (${CLIENT_SECRET ? "confidential" : "public, pkce only"}), redirect ${REDIRECT_URI}, api ${API}`);
+  log(`client ${CLIENT_ID} (${CLIENT_SECRET ? "confidential" : "public, pkce only"}), redirect ${REDIRECT_URI}`);
   log(loadTokens() ? `found saved tokens in ${TOKEN_FILE}` : "no saved tokens yet, go to /connect");
 });
